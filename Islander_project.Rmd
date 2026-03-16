@@ -1,7 +1,9 @@
 ---
 title: "Islander Drug Analysis"
 author: "Kristina Dmytruk"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 # Islander Dataset Analysis
 This analysis explores the effect of different experimental drugs on memory improvement
