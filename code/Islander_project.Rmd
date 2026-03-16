@@ -8,7 +8,7 @@ output:
 # Islander Dataset Analysis
 This analysis explores the effect of different experimental drugs on memory improvement
 in the Islander dataset. The study evaluates overall memory improvement, compares
-drug treatments, and investigates potential influences such as dosage, age group, family background, and state of mood.
+drug treatments, and investigates potential influences such as dosage, age group, family background, and emotional valence of the memory.
 
 ## Research Questions
 
@@ -27,7 +27,6 @@ library(tidyverse)
 library(readr)
 library(reshape2)
 library(ggpubr)
-library(knitr)
 ```
 
 ### Load dataset

@@ -5,7 +5,7 @@ https://curlykrissi.github.io/islander-memory-analysis/code/Islander_project.htm
 
 ## Project Overview
 
-This project analyzes the **Islander dataset** to investigate how different experimental drugs influence memory improvement. The analysis evaluates whether treatment improves memory performance and examines how factors such as drug type, dosage, age group, mood, and family background may influence treatment response.
+This project analyzes the **Islander dataset** to investigate how different experimental drugs influence memory improvement. The analysis evaluates whether treatment improves memory performance and examines how factors such as drug type, dosage, age group, emotional valence of the memory, and family background may influence treatment response.
 
 The project was conducted in **R using the tidyverse ecosystem** and demonstrates a complete data analysis workflow including exploratory analysis, statistical testing, and visualization.
 
@@ -49,16 +49,18 @@ The dataset contains measurements from participants who received one of three ex
 
 ### Statistical Testing
 - **Paired t-test** to compare memory scores before and after treatment
-- **ANOVA** to evaluate differences between drugs
-- **Tukey HSD** post-hoc test for pairwise drug comparisons
+- **ANOVA** to evaluate differences between drugs and age groups
+- **Tukey HSD** post-hoc test for pairwise drug and age groups comparisons
 
 ### Modeling
-- Linear models to assess the influence of predictors such as age group
+- Linear models to assess the influence of predictors such as age group or certain drug
 
 ### Visualization
-- Dose–response plots
-- Heatmaps showing family response patterns
 - Grouped summary plots
+- Memory improvement by drug
+- Dose–response plots
+- Drug effect by emotional valence
+- Heatmaps showing family response patterns
 
 ---
 
@@ -81,7 +83,6 @@ The dataset contains measurements from participants who received one of three ex
 - **dplyr**
 - **reshape2**
 - **ggpubr**
-- **knitr**
 
 ---
 
