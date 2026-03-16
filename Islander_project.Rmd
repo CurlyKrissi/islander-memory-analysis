@@ -1,0 +1,402 @@
+---
+title: "Islander Drug Analysis"
+author: "Kristina Dmytruk"
+output: html_notebook
+---
+# Islander Dataset Analysis
+This analysis explores the effect of different experimental drugs on memory improvement
+in the Islander dataset. The study evaluates overall memory improvement, compares
+drug treatments, and investigates potential influences such as dosage, age group, family background, and state of mood.
+
+## Research Questions
+
+This analysis aims to answer the following questions:
+
+1. Do participants show overall memory improvement after treatment?
+2. Do different drugs produce different levels of improvement?
+3. Does drug dosage influence memory improvement?
+4. Does age affect treatment response?
+5. Does emotional valence influence recall?
+6. Do individuals from the same family respond similarly to treatment?
+
+### Load Required Libraries
+```{r load-packages}
+library(tidyverse)
+library(readr)
+library(reshape2)
+library(ggpubr)
+library(knitr)
+```
+
+### Load dataset
+```{r load-dataset}
+Islander_data <- read_csv(
+  "~/Documents/R programming/Elixir course/2025-04-23-R-basic-main/2025-04-23-R-basic-main/data/Islander_data.csv",
+  show_col_types = FALSE
+)
+
+```
+
+## Data exploration 
+Inspecting dataset structure and checking for missing values
+```{r}
+# Print first 10 rows
+head(Islander_data, 10)
+
+# Descriptive statistics
+summary(Islander_data)
+
+# Check missing values
+colSums(is.na(Islander_data))
+
+```
+### Memory Scores Before and After Treatment
+Calculation of the overall average memory scores before and after drug administration
+``` {r}
+average_memory_score_before <- mean(Islander_data$Mem_Score_Before)
+paste('Average before is', average_memory_score_before)
+
+average_memory_score_after <- mean(Islander_data$Mem_Score_After)
+paste('Average after is', average_memory_score_after)
+
+t_test_memory_improvment <- t.test(
+  Islander_data$Mem_Score_After,
+  Islander_data$Mem_Score_Before,
+  paired = TRUE
+)
+t_test_memory_improvment
+```
+### Data exploration conclusion 
+According to paired t-test we can conclude that there is a significant difference in the memory score after drug administration. 
+
+## Within-drug effect
+
+### Memory improvement summary by Drug
+```{r}
+Islander_data %>% 
+  group_by(Drug) %>%  #part 1
+  summarize(
+    Mean = mean(Diff, na.rm = TRUE), #the average diff in memory scores
+    Median = median(Diff, na.rm = TRUE), #median 
+    Standard_deviation = sd(Diff, na.rm = TRUE) #variance - standard deviation 
+)
+```
+
+### Introducing color-coding for each drug
+```{r}
+drug_colors <- c("A" = "red", "S" = "green", "T" = "blue")
+```
+
+### Memory improvement comparison visualization 
+``` {r}
+summary_plot <- Islander_data %>%
+  group_by(Drug) %>%
+  summarise(mean_diff = mean(Diff, na.rm = TRUE)) %>%
+  ggplot(aes(x = Drug, y = mean_diff, fill = Drug)) +
+  geom_col(width = 0.6, alpha=0.5) +
+  theme_minimal() +
+  labs(
+    title = "Average Memory Improvement by Drug",
+    x = "Drug",
+    y = "Average Memory Score Improvement"
+  ) +
+  scale_fill_manual(values = drug_colors)
+
+summary_plot
+
+ggsave(
+  filename = "Memory_improvement_summary.pdf",
+  plot = summary_plot,
+  width = 8,
+  height = 5
+)
+
+```
+
+
+### Paired t-tests for Memory Improvement by Drug
+To determine whether memory scores significantly improved after treatment,
+paired t-tests are performed for each drug separately.
+
+```{r}
+
+t_test_memory_improvment_A <- t.test(
+  Islander_data$Mem_Score_After[Islander_data$Drug == "A"],
+  Islander_data$Mem_Score_Before[Islander_data$Drug == "A"],
+  paired = TRUE
+)
+t_test_memory_improvment_A
+
+t_test_memory_improvment_S <- t.test(
+  Islander_data$Mem_Score_After[Islander_data$Drug == "S"],
+  Islander_data$Mem_Score_Before[Islander_data$Drug == "S"],
+  paired = TRUE
+)
+t_test_memory_improvment_S
+
+t_test_memory_improvment_T <- t.test(
+  Islander_data$Mem_Score_After[Islander_data$Drug == "T"],
+  Islander_data$Mem_Score_Before[Islander_data$Drug == "T"],
+  paired = TRUE
+)
+t_test_memory_improvment_T
+
+```
+
+### Within-drug effect conclusion 
+Paired t-tests indicate that Drug A produces a statistically significant improvement in memory scores relative to baseline.  
+Drugs S and T do not show statistically significant improvements when analyzed separately.
+
+## Between-drug comparison
+
+``` {r}
+model <- lm(Diff ~ Drug, data = Islander_data)
+anova(model)
+tukey_results <- TukeyHSD(aov(model))
+tukey_results
+```
+
+### Visual exploration: box plots 
+``` {r}
+Memory_improvment_by_drug <- ggplot(Islander_data, aes(x = Drug, y = Diff, fill = Drug)) +
+  geom_boxplot(alpha = 0.5) +
+  geom_jitter(width = 0.2, alpha = 0.4) +
+  theme_minimal() +
+  labs(
+    title = "Memory Improvement by Drug",
+    y = "Memory Score Difference"
+  ) +
+  scale_fill_manual(values = drug_colors)
+
+Memory_improvment_by_drug
+
+ggsave(
+  filename = "Memory_Improvment_by_Drug.pdf",
+  plot = Memory_improvment_by_drug,
+  width = 8,
+  height = 5
+)
+```
+
+### Between-drug conclusion 
+The linear model and ANOVA indicate a significant effect of drug treatment on memory improvement (F(2,195) = 22.71, p < 0.001).  
+
+Post-hoc Tukey comparisons show:
+
+- Drug A improves memory significantly better than Drug S (p < 0.001) and Drug T (p < 0.001).  
+- No significant difference is observed between Drugs S and T (p = 0.968).  
+
+Thus, Drug A demonstrates the strongest and most consistent improvement, whereas S and T have similar, weaker effects.  
+Further analyses will primarily focus on Drug A.
+
+## Dosage-response analysis 
+
+The dose–response  shows how memory improvement changes 
+with increasing drug dosage.
+
+If improvement increases with dosage, this suggests a potential 
+dose-dependent treatment effect.
+
+``` {r}
+dosage_summary <- Islander_data %>%
+  group_by(Drug, Dosage) %>%
+  summarise(
+    mean_diff = mean(Diff, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Drug), mean_diff) %>%
+  mutate(Dosage = factor(Dosage))  # convert Dosage to factor
+```
+
+### Visualization: Dose–Response Relationship
+
+``` {r}
+dosage_effect <- ggplot(dosage_summary, aes(x = Dosage, y = mean_diff, color = Drug, group = Drug)) +
+  geom_line(alpha = 0.5) +
+  geom_point(size = 3, alpha = 0.6) +
+  facet_wrap(~Drug) +
+  theme_minimal() +
+  labs(
+    title = "Dose–Response Relationship by Drug",
+    x = "Dosage",
+    y = "Average Memory Improvement"
+  ) +
+  scale_color_manual(values = drug_colors)
+  
+dosage_effect 
+
+#Save the plot as a PDF file
+ggsave(
+  filename = "Dosage_effect.pdf",
+  plot = dosage_effect,
+  width = 8,
+  height = 5
+)
+```
+## Age_group analysis
+```{r}
+#Add new column age_group
+Islander_data <- Islander_data %>%
+  mutate(
+    Age_group = case_when(
+      age < 30 ~ 'Young',
+      age > 50 ~ 'Senior',
+      TRUE ~ 'Middle age'
+    ),
+    Age_group = factor(Age_group, levels = c("Young", "Middle age", "Senior"))
+  ) 
+  
+#Group by Age_group and Drug  
+Islander_data %>%
+  group_by(Age_group, Drug) %>%
+  summarise(
+    mean_diff = mean(Diff, na.rm = TRUE)
+  ) 
+
+```
+### Statistics: does age group affects response to Drug A
+To determine whether the effectiveness of Drug A varies across age groups,
+a linear model was fitted with memory improvement as the dependent
+variable and age group as the predictor.
+
+The ANOVA test evaluates whether the average improvement differs
+between age groups.
+```{r}
+age_effect_model <- Islander_data %>%
+  filter(Drug == "A") %>%
+  lm(Diff ~ Age_group, data = .)
+
+summary(age_effect_model)
+anova(age_effect_model)
+```
+### Age group effect conclusion
+There is no statistically significant effect of age group on the efficacy of Drug A at the 0.05 significance level.
+
+### Visualization: Strength of Drug A effect on different age groups 
+``` {r}
+#Visualization: Drug_A_effect_across_age_group 
+Drug_A_effect_accross_age_group <- Islander_data %>%
+  filter(Drug == "A") %>%
+  ggplot(aes(x = Age_group, y = Diff, fill = Age_group)) +
+  geom_boxplot(alpha = 1) +
+  theme_minimal() +
+  labs(
+    title = "Drug A Effect Across Age Groups",
+    x = "Age Group",
+    y = "Memory Score Improvement"
+  ) +
+  scale_fill_manual(values = c(
+    "Young" = "#fcbba1",
+    "Middle age" = "#fb6a4a",
+    "Senior" = "#cb181d"
+  ))
+
+Drug_A_effect_accross_age_group
+
+#Save the plot as a PDF file
+ggsave(
+  filename = "Drug_A_effect_across_age_group.pdf",
+  plot = Drug_A_effect_accross_age_group,
+  width = 8,
+  height = 5
+)
+```
+
+## Memories emotional valence analysis 
+
+``` {r}
+emotion_summary <- Islander_data %>%
+  group_by(Happy_Sad_group) %>%
+  summarise(
+    mean_diff = mean(Diff, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#Visualization:
+emotion_effect <- ggplot(emotion_summary, aes(x = Happy_Sad_group, y = mean_diff, fill = Happy_Sad_group)) +
+  geom_col(width = 0.6) +
+  theme_minimal() +
+  scale_fill_manual(values = c(S = "lightblue", H = "lightcoral")) +
+  labs(
+    title = "Average Memory Improvement by emotional valence",
+    x = "Emotional valence",
+    y = "Average Memory Improvement"
+  )
+emotion_effect
+
+#Save the plot as a PDF file
+ggsave(
+  filename = "Drug_effect_emotional_valence.pdf",
+  plot = emotion_effect,
+  width = 8,
+  height = 5
+)
+
+```
+### Statistics: does emotional valence influence recall after drugs administration?
+ 
+``` {r}
+mood_t_test <- t.test(
+  Diff ~ Happy_Sad_group,
+  data = Islander_data
+)
+
+mood_t_test
+```
+### Emotional valence conclusion: 
+No significant difference observed in recall improvement between happy and sad memories.
+
+However, there could be difference in recall improvement between happy and sad memories for certain drug. 
+
+## Genetical background: response to treatment by family
+``` {r}
+#Add column Family
+Islander_data <- Islander_data %>%
+  mutate(Family = factor(last_name))
+
+#Heatmap: Response to treatment by family and drug
+Islander_data_filtered <- Islander_data %>%
+  group_by(Family) %>%
+  filter(n_distinct(Drug) == 3) %>%  # Assuming 3 unique treatments
+  ungroup() 
+
+#Reshape data without aggregation
+data_matrix <- dcast(Islander_data_filtered, Family ~ Drug, value.var = "Diff", fun.aggregate = mean)  # using mean or any other aggregation if needed
+
+#Melt the data to long format for plotting
+data_long <- melt(data_matrix, id.vars = "Family", variable.name = "Drug", value.name = "Diff")
+
+#Plot the heatmap
+Heatmap_TreatmentResponse_ByFamile <- ggplot(data_long, aes(x = Drug, y = Family, fill = Diff)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lightblue", high = "lightcoral") +
+  theme_minimal() +
+  labs(x = "Drug", y = "Family", title = "Heatmap of Treatment Response by Family") 
+
+Heatmap_TreatmentResponse_ByFamile
+
+#Save the plot as a PDF file
+ggsave(
+  filename = "Heatmap_TreatmentResponse_ByFamile.pdf",
+  plot = Heatmap_TreatmentResponse_ByFamile,
+  width = 8,
+  height = 5
+)
+```
+### Genetical background conclusion
+Members of different families were treated with one of the experimental drugs. The heatmap indicates that noticeable memory improvement is primarily observed among participants who received Drug A. This observation is consistent with the earlier statistical analysis, which showed that only Drug A produces a significant improvement in memory scores relative to baseline.
+
+Overall, these results suggest that the positive effect of Drug A on memory performance does not appear to depend strongly on family background, implying that genetic differences between families are unlikely to be a major driver of the observed improvement. At the same time, the heatmap shows that some families did not experience noticeable improvement under any treatment, indicating that individual or family-level factors may still influence responsiveness to the drugs.
+
+## Final Conclusion 
+
+The present analysis investigated the effect of experimental drugs on memory improvement using the Islander dataset. Several statistical approaches were applied to evaluate treatment effects and explore potential factors influencing drug response.
+
+A paired t-test comparing memory scores before and after treatment demonstrated a statistically significant improvement in memory performance following drug administration (t = 3.87, p < 0.001), indicating that treatment overall was associated with enhanced recall ability. 
+
+To determine whether different drugs produced different effects, a linear model followed by ANOVA and Tukey post-hoc tests was conducted. These analyses revealed a significant effect of drug type on memory improvement (F(2,195) = 22.71, p < 0.001). Post-hoc comparisons showed that Drug A resulted in significantly greater improvement than both Drug S and Drug T, while no significant difference was observed between Drugs S and T. 
+
+Further analyses investigated potential moderating factors. Dose–response patterns suggested that higher dosages may be associated with increased memory improvement, particularly for Drug A. Age group analysis indicated modest differences in response, with middle-aged participants showing slightly higher improvements compared to younger participants, although overall age effects were limited.
+
+Finally, examination of family-level patterns using a heatmap suggested that the beneficial effect of Drug A was broadly consistent across families. While some families did not show strong responses to any treatment, the overall pattern indicates that genetic background is unlikely to be the primary driver of the observed treatment effect. 
+
+Taken together, the results indicate that Drug A demonstrates the most promising effect on memory improvement among the tested treatments. These findings highlight the importance of drug selection in cognitive enhancement studies and suggest that Drug A warrants further investigation in controlled experimental settings.
