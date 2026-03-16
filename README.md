@@ -3,6 +3,10 @@
 ## Notebook with output available via link:
 https://curlykrissi.github.io/islander-memory-analysis/code/Islander_project.html
 
+**Project inspired by ELIXIR Estonia Statistics for Life Sciences in R Course**  
+Original materials and data files provided under MIT lisence and can be found here: [ELIXIREstonia R Visualization GitHub](https://github.com/ELIXIREstonia/2025-04-24-R-visualisation)
+
+
 ## Project Overview
 
 This project analyzes the **Islander dataset** to investigate how different experimental drugs influence memory improvement. The analysis evaluates whether treatment improves memory performance and examines how factors such as drug type, dosage, age group, emotional valence of the memory, and family background may influence treatment response.
@@ -94,3 +98,5 @@ Islander_drug_analysis/
 ├── graphs/
 ├── data/
 └── README.md
+
+## 
