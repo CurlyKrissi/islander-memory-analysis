@@ -213,7 +213,9 @@ islander-memory-analysis/
 ├── powerbi-dashboard/
 │   └── Islander_Memory_Analysis.pbix
 └── README.md
-```text
+```
+
+---
 
 # 🚀 Skills Demonstrated
 
